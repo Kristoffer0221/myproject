@@ -1,69 +1,25 @@
+{% load static tailwind_tags %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Django Auth System</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f7f7f7;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      width: 400px;
-      margin: 60px auto;
-      background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .alert {
-      background: #ffdddd;
-      color: #a00;
-      padding: 10px;
-      margin-bottom: 15px;
-      border-left: 5px solid #a00;
-      border-radius: 4px;
-    }
-    .success {
-      background: #ddffdd;
-      color: #060;
-      border-left-color: #060;
-    }
-    input[type="text"], input[type="password"], input[type="email"] {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      background: #007bff;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-   
 
+<head>
+  <meta charset="UTF-8" />
+  <title>{% block title %}Forms{% endblock %}</title>
+  {% tailwind_css %}
+</head>
+
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+
+  <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
     {% block content %}{% endblock %}
   </div>
 
   <script>
-    // Hide messages automatically after 3 seconds
+    // Hide alert messages after 3 seconds
     setTimeout(() => {
       document.querySelectorAll('.alert').forEach(el => el.remove());
     }, 3000);
   </script>
 </body>
+
 </html>

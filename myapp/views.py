@@ -1,10 +1,67 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from .forms import RegistrationForm, LoginForm, TaskForm
+from .forms import RegistrationForm, LoginForm, TaskForm, ContactForm1, ContactForm2, PatientInformationForm
 from django.contrib.auth.decorators import login_required
-from .models import Task
-  
+from .models import Task, PatientInformation
+from formtools.wizard.views import SessionWizardView
+from django import forms
+
+
+class PatientFormStep1(PatientInformationForm):
+    class Meta(PatientInformationForm.Meta):
+        fields = [
+            'test_date',
+            'philhealth_number', 'not_enrolled_philhealth',
+            'philsys_number', 'no_philsys_number',
+            'first_name', 'middle_name', 'last_name', 'suffix',
+        ]
+
+
+class PatientFormStep2(PatientInformationForm):
+    class Meta(PatientInformationForm.Meta):
+        fields = [
+            'mother_first_2_letters', 'father_first_2_letters', 'birth_order',
+            'birth_date', 'age', 'age_in_months',
+            'sex', 'gender_identity', 'gender_other_specify',
+            'current_residence_city', 'current_residence_province',
+            'permanent_residence_city', 'permanent_residence_province',
+            'place_of_birth_city', 'place_of_birth_province',
+        ]
+
+
+class PatientFormStep3(PatientInformationForm):
+    class Meta(PatientInformationForm.Meta):
+        fields = [
+            'is_filipino', 'other_nationality',
+            'civil_status', 'living_with_partner',
+            'number_of_children', 'currently_pregnant',
+        ]
+
+
+class PatientInformationWizard(SessionWizardView):
+    form_list = [PatientFormStep1, PatientFormStep2, PatientFormStep3]
+    template_name = 'patient_info.html'
+
+    def done(self, form_list, **kwargs):
+        # Combine all form data into one dictionary
+        data = {}
+        for form in form_list:
+            data.update(form.cleaned_data)
+
+        patient = PatientInformation(**data)      # 1️⃣ Prepare form data (like form.save(commit=False))
+        patient.user = self.request.user          # 2️⃣ Assign logged-in user
+        patient.save()                            # 3️⃣ Save to database
+        return redirect('home')   
+
+
+class ContactWizard(SessionWizardView):
+    form_list = [ContactForm1, ContactForm2]
+    template_name = 'contact_form.html'
+
+    def done(self, form_list, **kwargs):
+        # Process the completed forms
+        return render(self.request, 'home.html', {'form_data': [form.cleaned_data for form in form_list]})
 
 # Register View
 def register(request):
@@ -51,8 +108,22 @@ def login_view(request):
 
 @login_required
 def home(request):
+    # Get the user's tasks
     task = Task.objects.filter(user=request.user)
-    return render(request, 'home.html', {'task':task})
+
+    # Try to get the user's patient information (if it exists)
+    patient_info = None
+    try:
+        patient_info = PatientInformation.objects.get(user=request.user)
+    except PatientInformation.DoesNotExist:
+        patient_info = None
+
+    context = {
+        'task': task,
+        'patient_info': patient_info,
+    }
+
+    return render(request, 'home.html', context)
 
 
 # Logout View
@@ -75,3 +146,16 @@ def add_task(request):
         form = TaskForm()
         
         return render (request, "add_task.html", {'form':form})
+
+# @login_required
+# def add_personal_info(request):
+#     if request.method == 'POST':
+#         form = PersonalInformationForm(request.POST)
+#         if form.is_valid():
+#             info = form.save(commit=False)
+#             info.user = request.user
+#             info.save()
+#             return redirect('home')
+#     else:
+#         form = PersonalInformationForm()
+#     return render(request, 'add_personal_info.html', {'form': form})

@@ -1,26 +1,73 @@
+{% load tailwind_tags %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Home</title>
+    {% tailwind_css %}
 </head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-6xl mx-auto space-y-10">
 
-<body>
-    <h1>Welcome to MyApp</h1>
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Welcome, {{ user.first_name|default:user.username }}!</h1>
 
-    <h2>Welcome to the Home Page {{user.username}}</h2>
-    <p>You are successfully logged in.</p>
-    <form method="POST" action="{% url 'logout' %}">
-        {% csrf_token %}
-        <button type="submit">Logout</button>
-    </form>
+        <!-- PATIENT INFORMATION CARD -->
+        <div class="bg-white shadow-md rounded-xl p-6">
+            <h2 class="text-2xl font-semibold text-blue-700 border-b pb-2 mb-4">
+                Patient Information
+            </h2>
 
-    <a href="{% url 'add_task' %}">Add task here</a>
-        {% for t in task %}
-        {{t.title}}
-        {% endfor %}
+            {% if patient_info %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                    <p><strong>Full Name:</strong> {{ patient_info.first_name }} {{ patient_info.middle_name }} {{ patient_info.last_name }} {{ patient_info.suffix }}</p>
+                    <p><strong>Test Date:</strong> {{ patient_info.test_date }}</p>
+                    <p><strong>Sex:</strong> {{ patient_info.sex }}</p>
+                    <p><strong>Gender Identity:</strong> {{ patient_info.gender_identity }}</p>
+                    <p><strong>Birth Date:</strong> {{ patient_info.birth_date }}</p>
+                    <p><strong>Age:</strong> {{ patient_info.age }}</p>
+                    <p><strong>PhilHealth Number:</strong> {{ patient_info.philhealth_number|default:"N/A" }}</p>
+                    <p><strong>PhilSys Number:</strong> {{ patient_info.philsys_number|default:"N/A" }}</p>
+                    <p><strong>Residence:</strong> {{ patient_info.current_residence_city }}, {{ patient_info.current_residence_province }}</p>
+                    <p><strong>Permanent Residence:</strong> {{ patient_info.permanent_residence_city }}, {{ patient_info.permanent_residence_province }}</p>
+                    <p><strong>Place of Birth:</strong> {{ patient_info.place_of_birth_city }}, {{ patient_info.place_of_birth_province }}</p>
+                    <p><strong>Nationality:</strong>
+                        {% if patient_info.is_filipino %}
+                            Filipino
+                        {% else %}
+                            {{ patient_info.other_nationality }}
+                        {% endif %}
+                    </p>
+                    <p><strong>Civil Status:</strong> {{ patient_info.civil_status }}</p>
+                    <p><strong>Living with Partner:</strong> {{ patient_info.living_with_partner|yesno:"Yes,No" }}</p>
+                    <p><strong>Children:</strong> {{ patient_info.number_of_children|default:"0" }}</p>
+                    <p><strong>Currently Pregnant:</strong> {{ patient_info.currently_pregnant|yesno:"Yes,No" }}</p>
+                </div>
+            {% else %}
+                <p class="text-gray-600">No patient information found for your account.</p>
+                <a href="{% url 'patient_information_wizard' %}"
+                   class="mt-4 inline-block px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    Fill Out Patient Information
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- TASK LIST CARD -->
+        <div class="bg-white shadow-md rounded-xl p-6">
+            <h2 class="text-2xl font-semibold text-green-700 border-b pb-2 mb-4">Your Tasks</h2>
+
+            {% if task %}
+                <ul class="space-y-2">
+                    {% for t in task %}
+                        <li class="p-3 border border-gray-200 rounded-md hover:bg-gray-50">
+                            {{ t.title }} — <span class="text-gray-500">{{ t.status }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-gray-600">You have no tasks yet.</p>
+            {% endif %}
+        </div>
+
+    </div>
 </body>
-
 </html>
