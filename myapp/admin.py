@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Task, PatientInformation
+from .models import Task, PatientInformation, HivTesting
 # Register your models here.
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
@@ -17,7 +17,6 @@ class PatientInformationAdmin(admin.ModelAdmin):
         'sex',
         'age',
         'civil_status',
-        'test_date',
         'current_residence_city',
         'current_residence_province',
     )
@@ -27,7 +26,6 @@ class PatientInformationAdmin(admin.ModelAdmin):
         'is_filipino',
         'living_with_partner',
         'currently_pregnant',
-        'test_date',
     )
     search_fields = (
         'first_name',
@@ -38,14 +36,11 @@ class PatientInformationAdmin(admin.ModelAdmin):
         'current_residence_city',
         'current_residence_province',
     )
-    readonly_fields = ('age', 'age_in_months')  # if computed or auto-calculated
-    ordering = ('-test_date',)
+    readonly_fields = ('age', 'age_in_months')  
+    ordering = ('user',)
     fieldsets = (
         ('User Association', {
             'fields': ('user',)
-        }),
-        ('Testing Details', {
-            'fields': ('test_date',)
         }),
         ('PhilHealth and PhilSys', {
             'fields': ('philhealth_number', 'not_enrolled_philhealth', 'philsys_number', 'no_philsys_number')
@@ -76,4 +71,53 @@ class PatientInformationAdmin(admin.ModelAdmin):
                 'currently_pregnant',
             )
         }),
+    )
+
+@admin.register(HivTesting)
+class HivTestingAdmin(admin.ModelAdmin):
+    list_display = (
+        'user',
+        'birth_mother_hiv',
+        'sexual_activity_male',
+        'sexual_activity_female',
+        'tested_before',
+        'result',
+        'city_municipality',
+        'sex_partner_count_male',
+        'sex_partner_count_female',
+        'condom_use',
+    )
+
+    search_fields = (
+        'user__username',
+        'city_municipality',
+        'test_facility',
+        'other_reason',
+    )
+
+    list_filter = (
+        'birth_mother_hiv',
+        'sexual_activity_male',
+        'sexual_activity_female',
+        'tested_before',
+        'result',
+        'sex_with_male',
+        'sex_with_female',
+        'condom_use',
+    )
+
+    ordering = ('user',)
+
+    readonly_fields = (
+        'date_of_last_test',
+        'date_paid_for_sex',
+        'date_received_payment',
+        'date_sex_under_influence',
+        'date_shared_needles',
+        'date_received_transfusion',
+        'date_occupational_exposure',
+        'most_recent_anal_or_neovaginal_sex_male',
+        'most_recent_anal_or_neovaginal_sex_female',
+        'most_recent_condomless_sex_male',
+        'most_recent_condomless_sex_female',
     )

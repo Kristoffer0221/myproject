@@ -1,0 +1,719 @@
+{% load tailwind_tags %}
+{% load widget_tweaks %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HIV Testing Form Wizard</title>
+  {% tailwind_css %}
+</head>
+
+<style>
+  .condom-use-radio {
+    transform: scale(1.4);
+    accent-color: #1e3a8a;
+    /* Tailwind Blue-900 */
+    cursor: pointer;
+  }
+</style>
+
+
+<body class="bg-gradient-to-br from-blue-700 to-blue-900 min-h-screen py-8 px-4">
+  <div class="max-w-5xl mx-auto">
+
+    <!-- STEP PROGRESS BAR -->
+    <div class="bg-white rounded-xl p-6 mb-8 shadow-lg">
+      <div class="flex items-center justify-between relative">
+        {% for step in wizard.steps.all %}
+        {% with step_index=forloop.counter %}
+        <div class="flex-1 flex flex-col items-center relative">
+
+          {% if not forloop.first %}
+          <div class="absolute top-1/2 left-0 w-full h-1 bg-gray-300 -z-10
+            {% if wizard.steps.step1 > step_index %}bg-blue-500{% endif %}
+            transition-all duration-700 ease-in-out">
+          </div>
+          {% endif %}
+
+          <!-- STEP CIRCLE -->
+          <div class="w-10 h-10 flex items-center justify-center rounded-full border-2
+            {% if wizard.steps.step1 >= step_index %}
+              bg-blue-500 border-blue-500 text-white scale-110
+            {% else %}
+              bg-white border-gray-300 text-gray-400
+            {% endif %}
+            transition-all duration-500 ease-in-out transform">
+            {% if wizard.steps.step1 > step_index %}
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            {% else %}
+            {{ step_index }}
+            {% endif %}
+          </div>
+
+          <!-- STEP LABEL -->
+          <div class="mt-3 text-sm font-semibold
+            {% if wizard.steps.step1 == step_index %}
+              text-blue-600
+            {% else %}
+              text-gray-500
+            {% endif %}
+            transition-all duration-300">
+            STEP {{ step_index }}
+          </div>
+
+          {% if wizard.steps.step1 == step_index %}
+          <div
+            class="w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-blue-600 mt-1 transition-all duration-500">
+          </div>
+          {% endif %}
+        </div>
+        {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- MAIN FORM CARD -->
+    <div class="bg-white rounded-xl shadow-lg">
+      <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-xl text-center">
+        {% for step in wizard.steps.all %}
+        {% if step == wizard.steps.current %}
+        {% if forloop.counter == 1 %}
+        <h1 class="text-2xl font-bold text-white">HIV Testing — Risk Assessment</h1>
+        <p class="text-blue-100 text-sm mt-1">Provide details on possible exposure and risk factors</p>
+        {% elif forloop.counter == 2 %}
+        <h1 class="text-2xl font-bold text-white">HIV Testing — Reason for Testing</h1>
+        <p class="text-blue-100 text-sm mt-1">Select why the test is being taken</p>
+        {% elif forloop.counter == 3 %}
+        <h1 class="text-2xl font-bold text-white">HIV Testing — Previous Test Details</h1>
+        <p class="text-blue-100 text-sm mt-1">Provide details of any prior HIV tests</p>
+        {% endif %}
+        {% endif %}
+        {% endfor %}
+      </div>
+
+      <!-- FORM -->
+      <form method="post" class="p-6">
+        {% csrf_token %}
+        {{ wizard.management_form }}
+
+        {% if forloop.counter == 1 %}
+        <h1 class="text-2xl font-bold text-white">HIV Testing — Risk Assessment</h1>
+        <p class="text-blue-100 text-sm mt-1">Provide details on possible exposure and risk factors</p>
+        {% elif forloop.counter == 2 %}
+        <h1 class="text-2xl font-bold text-white">HIV Testing — Reason for Testing</h1>
+        <p class="text-blue-100 text-sm mt-1">Select why the test is being taken</p>
+        {% elif forloop.counter == 3 %}
+        <h1 class="text-2xl font-bold text-white">HIV Testing — Previous Test Details</h1>
+        <p class="text-blue-100 text-sm mt-1">Provide details of any prior HIV tests</p>
+        {% endif %}
+
+        <!-- STEP 1 FORM FIELDS -->
+        {% for step in wizard.steps.all %}
+        {% if step == wizard.steps.current and forloop.counter == 1 %}
+
+        <!-- Did your birth mother have HIV when you were born? -->
+        <div class="flex flex-row items-center justify-center gap-4 mb-5">
+          <label class="text-sm font-semibold text-blue-700 whitespace-nowra">
+            {{ form.birth_mother_hiv.label }} <span class="text-red-500">*</span>
+          </label>
+
+          {{ form.birth_mother_hiv|add_class:"w-40 text-center" }}
+
+          {% for error in form.birth_mother_hiv.errors %}
+          <p class="text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <hr class="border-gray-300" />
+
+        <!-- SECTION: SEX WITH A MALE -->
+        <div class="mb-6">
+          <h2 class="text-xl font-bold text-blue-700 mb-5">Sex with a MALE</h2>
+
+          <div class="flex flex-row flex-wrap items-start justify-center md:justify-start gap-x-8 gap-y-4">
+
+            <!-- Sex Partner Count -->
+            <div class="flex-shrink-0 text-center md:text-left">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                {{ form.sex_partner_count_male.label }}
+                <span class="text-red-500">*</span>
+              </label>
+              {{ form.sex_partner_count_male|add_class:"w-53 text-sm mx-auto md:mx-0" }}
+
+              {% for error in form.sex_partner_count_male.errors %}
+              <p class="text-sm text-red-600">{{ error }}</p>
+              {% endfor %}
+            </div>
+
+            <!-- Sexual Activity -->
+            <div class="flex-grow min-w-[200px] text-center">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                {{ form.sexual_activity_male.label }}
+              </label>
+
+              <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 gap-6">
+                {% for opt in form.sexual_activity_male %}
+                <label class="inline-flex items-center space-x-2">
+                  {{ opt.tag }}
+                  <span class="text-sm text-gray-700">{{ opt.choice_label }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Most Recent Anal -->
+            <div class="flex-shrink-0 text-center md:text-left">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                {{ form.most_recent_anal_or_neovaginal_sex_male.label }}
+              </label>
+              {{ form.most_recent_anal_or_neovaginal_sex_male|add_class:"w-32 mx-auto md:mx-0" }}
+            </div>
+
+            <!-- Most Recent Condomless -->
+            <div class="flex-shrink-0 text-center md:text-left">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                {{ form.most_recent_condomless_sex_male.label }}
+              </label>
+              {{ form.most_recent_condomless_sex_male|add_class:"w-40 mx-auto md:mx-0" }}
+            </div>
+
+          </div>
+        </div>
+
+
+        <!-- SECTION: SEX WITH A FEMALE -->
+        <div class="mb-6">
+          <h2 class="text-xl font-bold text-blue-700 mb-5">Sex with a FEMALE</h2>
+
+          <!-- MOBILE CENTER / DESKTOP NORMAL -->
+          <div class="flex flex-row flex-wrap items-start justify-center md:justify-start gap-x-8 gap-y-4">
+
+            <!-- Sex Partner Count -->
+            <div class="flex-shrink-0 text-center md:text-left">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                {{ form.sex_partner_count_female.label }}
+                <span class="text-red-500">*</span>
+              </label>
+              {{ form.sex_partner_count_female|add_class:"w-53 text-sm mx-auto md:mx-0" }}
+
+              {% for error in form.sex_partner_count_female.errors %}
+              <p class="text-sm text-red-600">{{ error }}</p>
+              {% endfor %}
+            </div>
+
+            <!-- Sexual Activity -->
+            <div class="flex-grow min-w-[200px] text-center">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                {{ form.sexual_activity_female.label }}
+              </label>
+
+              <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 gap-6">
+                {% for opt in form.sexual_activity_female %}
+                <label class="inline-flex items-center space-x-2">
+                  {{ opt.tag }}
+                  <span class="text-sm text-gray-700">{{ opt.choice_label }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Most Recent Anal -->
+            <div class="flex-shrink-0 text-center md:text-left">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                {{ form.most_recent_anal_or_neovaginal_sex_female.label }}
+              </label>
+              {{ form.most_recent_anal_or_neovaginal_sex_female|add_class:"w-32 mx-auto md:mx-0" }}
+            </div>
+
+            <!-- Most Recent Condomless -->
+            <div class="flex-shrink-0 text-center md:text-left">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                {{ form.most_recent_condomless_sex_female.label }}
+              </label>
+              {{ form.most_recent_condomless_sex_female|add_class:"w-40 mx-auto md:mx-0" }}
+            </div>
+
+          </div>
+        </div>
+
+        <!-- SECTION: SEXUAL ACTIVITY WITH A MALE -->
+        <div class="mb-5 text-center md:mb-10">
+
+          <!-- Label text on top -->
+          <h2 class="text-sm text-blue-700 mb-2">
+            <span class="text-red-500">*</span>
+            Sex partners whose assigned sex at birth is MALE, including transgender and/or non-binary individuals
+          </h2>
+
+          <!-- Centered checkboxes with bigger gap -->
+          <div class="flex flex-wrap justify-center items-center gap-x-8 gap-y-3">
+
+            <label class="inline-flex items-center space-x-2 gap-2">
+              {{ form.oral }}
+              <span class="text-sm text-gray-700">
+                {{ form.oral.label }}
+              </span>
+            </label>
+
+            <label class="inline-flex items-center space-x-2 gap-2">
+              {{ form.anal_inserter }}
+              <span class="text-sm text-gray-700">
+                {{ form.anal_inserter.label }}
+              </span>
+            </label>
+
+            <label class="inline-flex items-center space-x-2 gap-2">
+              {{ form.anal_receiver }}
+              <span class="text-sm text-gray-700">
+                {{ form.anal_receiver.label }}
+              </span>
+            </label>
+
+          </div>
+        </div>
+
+        <!-- SECTION: SEXUAL ACTIVITY WITH A FEMALE -->
+        <div class="mb-5 text-center">
+
+          <!-- Label text on top -->
+          <h2 class="text-sm text-blue-700 mb-2">
+            <span class="text-red-500">**</span>
+            Sex partners whose assigned sex at birth is FEMALE, including transgender and/or non-binary individuals
+          </h2>
+
+          <!-- Centered checkboxes with gap -->
+          <div class="flex flex-wrap justify-center items-center gap-x-8 gap-y-3">
+
+            <label class="inline-flex items-center space-x-2 gap-2">
+              {{ form.vaginal_inserter }}
+              <span class="text-sm text-gray-700">
+                {{ form.vaginal_inserter.label }}
+              </span>
+            </label>
+
+            <label class="inline-flex items-center space-x-2 gap-2">
+              {{ form.vaginal_receiver }}
+              <span class="text-sm text-gray-700">
+                {{ form.vaginal_receiver.label }}
+              </span>
+            </label>
+
+          </div>
+        </div>
+
+
+          <hr class="border-gray-300" />
+
+          <!-- CONDOM USE QUESTION -->
+          <div class="flex flex-row items-center justify-evenly gap-4 mt-4 mb-8">
+
+            <label for="{{ form.condom_use.id_for_label }}"
+              class="text-sm font-semibold text-blue-700 whitespace-nowrap">
+              Condom Use: Last 12 months <span class="text-red-500">*</span>
+            </label>
+
+            {{ form.condom_use|add_class:"w-40 text-center" }}
+
+            {% for error in form.condom_use.errors %}
+            <p class="text-sm text-red-600 text-center mt-1">{{ error }}</p>
+            {% endfor %}
+
+          </div>
+
+          <!-- Paid for sex -->
+          <div class="flex items-start w-full justify-between mb-5">
+
+            <div class="w-1/4 flex-shrink-0 flex flex-col">
+              <label class="text-sm font-semibold text-blue-700">
+                {{ form.paid_for_sex.label }} (in cash or kind)
+              </label>
+            </div>
+
+            <div class="ml-20 text-center">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                Yes <span class="text-white">-</span>No
+              </label>
+
+              <div class="flex flex-wrap items-center gap-4">
+                {% for opt in form.paid_for_sex %}
+                <label class="inline-flex items-center space-x-2">
+                  {{ opt.tag }}
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="w-1/4 flex flex-col items-end">
+              <label class="text-sm font-semibold text-blue-700 mb-1">
+                {{ form.date_paid_for_sex.label }} (MM/YYYY)
+              </label>
+              {{ form.date_paid_for_sex|add_class:"w-32" }}
+            </div>
+
+          </div>
+
+          <!-- Received payment for sex -->
+          <div class="flex items-start w-full justify-between mb-5">
+
+            <div class="w-1/4 flex-shrink-0 flex flex-col">
+              <label class="text-sm font-semibold text-blue-700">
+                {{ form.received_payment_for_sex.label }} (in cash or kind) in exchange for sex
+              </label>
+            </div>
+
+            <div class="ml-20 text-center">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                Yes <span class="text-white">-</span>No
+              </label>
+
+              <div class="flex flex-wrap items-center gap-4">
+                {% for opt in form.received_payment_for_sex %}
+                <label class="inline-flex items-center space-x-2">
+                  {{ opt.tag }}
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="w-1/4 flex flex-col items-end">
+              <label class="text-sm font-semibold text-blue-700 mb-1">
+                {{ form.date_received_payment.label }} (MM/YYYY)
+              </label>
+              {{ form.date_received_payment|add_class:"w-32" }}
+            </div>
+
+          </div>
+
+          <!-- Had sex under the influence of drugs -->
+          <div class="flex items-start w-full justify-between mb-5">
+
+            <div class="w-1/4 flex-shrink-0 flex flex-col">
+              <label class="text-sm font-semibold text-blue-700">
+                Had sex under the influence of drugs
+              </label>
+            </div>
+
+            <div class="ml-20 text-center">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                Yes <span class="text-white">-</span>No
+              </label>
+
+              <div class="flex flex-wrap items-center gap-4">
+                {% for opt in form.sex_under_influence %}
+                <label class="inline-flex items-center space-x-2">
+                  {{ opt.tag }}
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="w-1/4 flex flex-col items-end">
+              <label class="text-sm font-semibold text-blue-700 mb-1">
+                {{ form.date_sex_under_influence.label }} (MM/YYYY)
+              </label>
+              {{ form.date_sex_under_influence|add_class:"w-32" }}
+            </div>
+
+          </div>
+
+          <!-- Shared needles in injection of drugs -->
+          <div class="flex items-start w-full justify-between mb-5">
+
+            <div class="w-1/4 flex-shrink-0 flex flex-col">
+              <label class="text-sm font-semibold text-blue-700">
+                Shared needles in injection of drugs
+              </label>
+            </div>
+
+            <div class="ml-20 text-center">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                Yes <span class="text-white">-</span>No
+              </label>
+
+              <div class="flex flex-wrap items-center gap-4">
+                {% for opt in form.shared_needles %}
+                <label class="inline-flex items-center space-x-2">
+                  {{ opt.tag }}
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="w-1/4 flex flex-col items-end">
+              <label class="text-sm font-semibold text-blue-700 mb-1">
+                {{ form.date_shared_needles.label }} (MM/YYYY)
+              </label>
+              {{ form.date_shared_needles|add_class:"w-32" }}
+            </div>
+
+          </div>
+
+          <!-- Received blood transfusion -->
+          <div class="flex items-start w-full justify-between mb-5">
+
+            <div class="w-1/4 flex-shrink-0 flex flex-col">
+              <label class="text-sm font-semibold text-blue-700">
+                Received blood transfusion
+              </label>
+            </div>
+
+            <div class="ml-20 text-center">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                Yes <span class="text-white">-</span>No
+              </label>
+
+              <div class="flex flex-wrap items-center gap-4">
+                {% for opt in form.received_transfusion %}
+                <label class="inline-flex items-center space-x-2">
+                  {{ opt.tag }}
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="w-1/4 flex flex-col items-end">
+              <label class="text-sm font-semibold text-blue-700 mb-1">
+                {{ form.date_received_transfusion.label }} (MM/YYYY)
+              </label>
+              {{ form.date_received_transfusion|add_class:"w-32" }}
+            </div>
+
+          </div>
+
+          <!-- Received blood transfusion -->
+          <div class="flex items-start w-full justify-between mb-5">
+
+            <div class="w-1/4 flex-shrink-0 flex flex-col">
+              <label class="text-sm font-semibold text-blue-700">
+                {{ form.occupational_exposure.label }} (needlestick/sharps)
+              </label>
+            </div>
+
+            <div class="ml-20 text-center">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                Yes <span class="text-white">-</span>No
+              </label>
+
+              <div class="flex flex-wrap items-center gap-4">
+                {% for opt in form.occupational_exposure %}
+                <label class="inline-flex items-center space-x-2">
+                  {{ opt.tag }}
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="w-1/4 flex flex-col items-end">
+              <label class="text-sm font-semibold text-blue-700 mb-1">
+                {{ form.date_occupational_exposure.label }} (MM/YYYY)
+              </label>
+              {{ form.date_occupational_exposure|add_class:"w-32" }}
+            </div>
+
+          </div>
+          {% endif %}
+          <!-- STEP 2 FORM FIELDS -->
+          {% if step == wizard.steps.current and forloop.counter == 2 %}
+          <div class="mb-6">
+            <h2 class="text-xl font-bold text-blue-700 mb-5">Please check all that apply.</h2>
+
+            <!-- Grid: 2 columns on mobile, 3 on md+ -->
+            <div class="grid grid-cols-3 md:grid-cols-2 gap-4 gap-y-3">
+
+              <div class="flex items-start">
+                <label class="flex items-center gap-2">
+                  {{ form.possible_exposure }}
+                  <span class="text-sm text-gray-700">Possible exposure to HIV</span>
+                </label>
+              </div>
+
+              <div class="flex items-start">
+                <label class="flex items-center gap-2">
+                  {{ form.employment_overseas }}
+                  <span class="text-sm text-gray-700">Employment - Overseas/Abroad</span>
+                </label>
+              </div>
+
+              <div class="flex items-start">
+                <label class="flex items-center gap-2">
+                  {{ form.insurance_requirement }}
+                  <span class="text-sm text-gray-700">Requirement for insurance</span>
+                </label>
+              </div>
+
+              <div class="flex items-start">
+                <label class="flex items-center gap-2">
+                  {{ form.recommended_by_physician }}
+                  <span class="text-sm text-gray-700">Recommended by physician/nurse/midwife</span>
+                </label>
+              </div>
+
+              <div class="flex items-start">
+                <label class="flex items-center gap-2">
+                  {{ form.employment_local }}
+                  <span class="text-sm text-gray-700">Employment - Local/Philippines</span>
+                </label>
+              </div>
+
+              <div class="flex items-start">
+                <label class="flex items-center gap-2">
+                  {{ form.received_text_invite }}
+                  <span class="text-sm text-gray-700">Received a text message/email encouraging me to get an HIV
+                    test</span>
+                </label>
+              </div>
+
+              <div class="flex items-start">
+                <label class="flex gap-2">
+                  {{ form.referred_by_peer_educator }}
+                  <span class="text-sm text-gray-700">Referred by a peer educator</span>
+                </label>
+              </div>
+
+              <!-- Other reason spans 2 columns on md+ and full width on mobile -->
+              <div class="col-span-2 md:col-span-2">
+                <label class="text-sm font-semibold text-blue-700 block mb-2">
+                  {{ form.other_reason.label }}
+                </label>
+                {{ form.other_reason }}
+                {% for error in form.other_reason.errors %}
+                <p class="text-sm text-red-600 mt-1">{{ error }}</p>
+                {% endfor %}
+              </div>
+
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- STEP 3 FORM FIELDS -->
+          {% if step == wizard.steps.current and forloop.counter == 3 %}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 justify-items-center w-full mb-5">
+
+            <!-- Have you ever been tested for HIV before? -->
+            <div class="text-center">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                Have you ever been tested for HIV before?
+              </label>
+
+              <div class="flex flex-wrap justify-center items-center gap-4">
+                {% for opt in form.tested_before %}
+                <label class="inline-flex items-center space-x-2">
+                  {{ opt.tag }}
+                  <span class="text-sm text-gray-700">{{ opt.choice_label }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Date of most recent test? -->
+            <div class="text-center">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                Date of most recent test?
+              </label>
+
+              {{ form.date_of_last_test|add_class:"min-w-[180px] max-w-[250px] text-center" }}
+
+
+              {% for error in form.date_of_last_test.errors %}
+              <p class="text-sm text-red-600">{{ error }}</p>
+              {% endfor %}
+            </div>
+
+            <!-- Date of most recent test? -->
+            <div class="text-center">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                Which HTS provider (facility or organization) conducted <br> your most recent HIV test?
+              </label>
+
+              {{ form.test_facility|add_class:"w-full text-center" }}
+
+              {% for error in form.test_facility.errors %}
+              <p class="text-sm text-red-600">{{ error }}</p>
+
+              {% endfor %}
+            </div>
+
+            <!-- Date of most recent test? -->
+            <div class="text-center">
+              <label class="text-sm font-semibold text-blue-700 block mb-1">
+                <br> <span class="text-white">nnn</span>City/Municipality
+              </label>
+
+              {{ form.city_municipality|add_class:"w-1/2 text-center" }}
+
+              {% for error in form.city_municipality.errors %}
+              <p class="text-sm text-red-600">{{ error }}</p>
+
+              {% endfor %}
+            </div>
+
+
+
+
+          </div>
+
+          {% endif %}
+
+
+
+          {% endfor %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          <!-- NAV BUTTONS -->
+          <div class="mt-8 flex justify-between items-center pt-6 border-t border-gray-200 w-full">
+            {% if wizard.steps.prev %}
+            <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300">
+              <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+              Previous
+            </button>
+            {% else %}
+            <div></div>
+            {% endif %}
+
+            {% if wizard.steps.next %}
+            <button type="submit"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300">
+              Next
+              <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            {% else %}
+            <button type="submit"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300">
+              Submit HIV Testing Info
+              <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </button>
+            {% endif %}
+          </div>
+
+      </form>
+    </div>
+  </div>
+</body>
+
+</html>

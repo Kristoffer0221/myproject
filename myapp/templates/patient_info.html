@@ -2,69 +2,214 @@
 {% load widget_tweaks %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Information Wizard</title>
     {% tailwind_css %}
 </head>
-<body class="bg-gray-100 min-h-screen py-10">
-    <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-md p-8">
-        <h1 class="text-2xl font-bold mb-6 text-center text-blue-700">
-            Patient Registration - Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}
-        </h1>
 
-        <form method="post" class="space-y-6">
-            {% csrf_token %}
-            {{ wizard.management_form }}
+<body class="bg-gradient-to-br from-purple-700 to-purple-900 min-h-screen py-8 px-4">
+    <div class="max-w-5xl mx-auto">
+        
+        <!-- STEP PROGRESS BAR -->
+        <div class="bg-white rounded-xl p-6 mb-8 shadow-lg">
+            <div class="flex items-center justify-between relative">
 
-            <fieldset class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {% for field in form %}
-                <div>
-                    <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">
-                        {{ field.label }}
-                    </label>
-                    {{ field|add_class:"w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500" }}
-                    {% if field.help_text %}
-                    <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
+                {% for step in wizard.steps.all %}
+                {% with step_index=forloop.counter %}
+                <div class="flex-1 flex flex-col items-center relative">
+
+                    <!-- CONNECTING LINE -->
+                    {% if not forloop.first %}
+                    <div class="absolute top-1/2 left-0 w-full h-1 bg-gray-300 -z-10 
+                      {% if wizard.steps.step1 > step_index %}bg-blue-500{% endif %}
+                      transition-all duration-700 ease-in-out">
+                    </div>
                     {% endif %}
-                    {% for error in field.errors %}
-                    <p class="text-sm text-red-600 mt-1">{{ error }}</p>
-                    {% endfor %}
+
+                    <!-- STEP CIRCLE -->
+                    <div class="w-10 h-10 flex items-center justify-center rounded-full border-2 
+                      {% if wizard.steps.step1 >= step_index %}
+                        bg-blue-500 border-blue-500 text-white scale-110
+                      {% else %}
+                        bg-white border-gray-300 text-gray-400
+                      {% endif %}
+                      transition-all duration-500 ease-in-out transform">
+                        {% if wizard.steps.step1 > step_index %}
+                        <!-- CHECK ICON -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        {% else %}
+                        {{ step_index }}
+                        {% endif %}
+                    </div>
+
+                    <!-- STEP LABEL -->
+                    <div class="mt-3 text-sm font-semibold 
+                      {% if wizard.steps.step1 == step_index %}
+                        text-blue-600
+                      {% else %}
+                        text-gray-500
+                      {% endif %}
+                      transition-all duration-300">
+                        STEP {{ step_index }}
+                    </div>
+
+                    <!-- ARROW UNDER ACTIVE STEP -->
+                    {% if wizard.steps.step1 == step_index %}
+                    <div
+                        class="w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-blue-600 mt-1 transition-all duration-500">
+                    </div>
+                    {% endif %}
                 </div>
+                {% endwith %}
                 {% endfor %}
-            </fieldset>
-
-            <div class="mt-8 flex justify-between">
-                {% if wizard.steps.prev %}
-                <button
-                    name="wizard_goto_step"
-                    type="submit"
-                    value="{{ wizard.steps.prev }}"
-                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                >
-                    ← Previous
-                </button>
-                {% else %}
-                <div></div>
-                {% endif %}
-
-                {% if wizard.steps.next %}
-                <button
-                    type="submit"
-                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                    Next →
-                </button>
-                {% else %}
-                <button
-                    type="submit"
-                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                    Submit ✅
-                </button>
-                {% endif %}
             </div>
-        </form>
+        </div>
+
+        <!-- MAIN FORM CARD -->
+        <div class="bg-white rounded-xl shadow-lg">
+            <!-- HEADER -->
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 rounded-t-xl text-center">
+                {# Find the current step and render a different header per step #}
+                {% for step in wizard.steps.all %}
+                {% if step == wizard.steps.current %}
+                {% if forloop.counter == 1 %}
+                <h1 class="text-2xl font-bold text-white">Patient Registration — Basic Info</h1>
+                <p class="text-purple-100 text-sm mt-1">Enter the patient's primary details</p>
+                {% elif forloop.counter == 2 %}
+                <h1 class="text-2xl font-bold text-white">Patient Registration — Personal Details</h1>
+                <p class="text-purple-100 text-sm mt-1">Provide personal and demographic information</p>
+                {% elif forloop.counter == 3 %}
+                <h1 class="text-2xl font-bold text-white">Patient Registration — Location & Status</h1>
+                <p class="text-purple-100 text-sm mt-1">Residence, civil status and other details</p>
+                {% else %}
+                <h1 class="text-2xl font-bold text-white">Patient Registration</h1>
+                <p class="text-purple-100 text-sm mt-1">Please fill in the required information</p>
+                {% endif %}
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- FORM CONTENT -->
+            <form method="post" class="p-6">
+                {% csrf_token %}
+                {{ wizard.management_form }}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for field in form %}
+                    {% if field.name == 'philhealth_number' %}
+                    <div class="flex flex-col">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            PhilHealth Number
+                        </label>
+                        {{ field }}
+                        <div class="flex items-center mt-2">
+                            <input type="checkbox" id="id_not_enrolled_philhealth"
+                                class="h-4 w-4 mt-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <label for="id_not_enrolled_philhealth" class="ml-2 mt-3 text-sm text-gray-600">
+                                Not enrolled in PhilHealth
+                            </label>
+                        </div>
+                    </div>
+
+                    {% elif field.name == 'philsys_number' %}
+                    <div class="flex flex-col">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            PhilSys Number
+                        </label>
+                        {{ field }}
+                        <div class="flex items-center mt-2">
+                            <input type="checkbox" id="id_no_philsys_number"
+                                class="h-4 w-4 mt-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <label for="id_no_philsys_number" class="ml-2 mt-3 text-sm text-gray-600">
+                                No PhilSys Number
+                            </label>
+                        </div>
+                    </div>
+
+
+
+                    {% elif field.name not in 'not_enrolled_philhealth,no_philsys_number' %}
+                    <div class="flex flex-col">
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ field.label }}{% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- NAVIGATION BUTTONS -->
+                <div class="mt-8 flex justify-between items-center pt-6 border-t border-gray-200">
+                    {% if wizard.steps.prev %}
+                    <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}"
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300">
+                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Previous
+                    </button>
+                    {% else %}
+                    <div></div>
+                    {% endif %}
+
+                    {% if wizard.steps.next %}
+                    <button type="submit"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300">
+                        Next
+                        <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                    {% else %}
+                    <button type="submit"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300">
+                        Complete Registration
+                        <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Checkbox logic
+            function handleCheckboxToggle(checkboxId, inputId) {
+                const checkbox = document.getElementById(checkboxId);
+                const input = document.getElementById(inputId);
+                if (checkbox && input) {
+                    checkbox.addEventListener('change', function () {
+                        input.disabled = this.checked;
+                        if (this.checked) {
+                            input.value = '';
+                            input.classList.add('bg-gray-100');
+                        } else {
+                            input.classList.remove('bg-gray-100');
+                        }
+                    });
+                }
+            }
+            handleCheckboxToggle('id_not_enrolled_philhealth', 'id_philhealth_number');
+            handleCheckboxToggle('id_no_philsys_number', 'id_philsys_number');
+
+        });
+    </script>
+
 </body>
+
 </html>

@@ -1,22 +1,73 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from .forms import RegistrationForm, LoginForm, TaskForm, ContactForm1, ContactForm2, PatientInformationForm
+from .forms import RegistrationForm, LoginForm, TaskForm, ContactForm1, ContactForm2, PatientInformationForm, HivTestingForm
 from django.contrib.auth.decorators import login_required
-from .models import Task, PatientInformation
+from .models import Task, PatientInformation, HivTesting, User
 from formtools.wizard.views import SessionWizardView
 from django import forms
+from django.http import FileResponse
+from .pdf_generator import generate_patient_pdf
 
+def dashboard(request):
+    return render(request, "dashboard.html")
+
+def download_patient_pdf(request, pk):
+    patient = PatientInformation.objects.get(pk=pk)
+    try:
+        hiv_testing = HivTesting.objects.get(user=patient.user)
+    except HivTesting.DoesNotExist:
+        hiv_testing = None 
+
+    # Generate PDF
+    pdf_path = generate_patient_pdf(patient, hiv_testing)
+    return FileResponse(open(pdf_path, 'rb'), as_attachment=True, filename=f"{patient.last_name}_{patient.first_name}_form.pdf")
 
 class PatientFormStep1(PatientInformationForm):
+    
+     # Add Registration fields
+    username = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Enter username',
+            'class': 'w-full rounded-lg border-blue-300 p-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+        })
+    )
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'placeholder': 'Enter email',
+            'class': 'w-full rounded-lg border-blue-300 p-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+        })
+    )
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'placeholder': 'Enter password',
+            'class': 'w-full rounded-lg border-blue-300 p-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+        })
+    )
+    confirm_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'placeholder': 'Confirm password',
+            'class': 'w-full rounded-lg border-blue-300 p-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+        })
+    )
+    
     class Meta(PatientInformationForm.Meta):
         fields = [
-            'test_date',
-            'philhealth_number', 'not_enrolled_philhealth',
-            'philsys_number', 'no_philsys_number',
+            'username', 'email', 'password', 'confirm_password',
             'first_name', 'middle_name', 'last_name', 'suffix',
+            'contact_number', 
+            'philhealth_number', 'not_enrolled_philhealth',
+            'philsys_number', 'no_philsys_number',        
         ]
+    def clean(self):
+        cleaned = super().clean()
+        pwd = cleaned.get("password")
+        cpwd = cleaned.get("confirm_password")
 
+        if pwd and cpwd and pwd != cpwd:
+            self.add_error("confirm_password", "Password does not match.")
+
+        return cleaned
 
 class PatientFormStep2(PatientInformationForm):
     class Meta(PatientInformationForm.Meta):
@@ -29,7 +80,6 @@ class PatientFormStep2(PatientInformationForm):
             'place_of_birth_city', 'place_of_birth_province',
         ]
 
-
 class PatientFormStep3(PatientInformationForm):
     class Meta(PatientInformationForm.Meta):
         fields = [
@@ -37,23 +87,94 @@ class PatientFormStep3(PatientInformationForm):
             'civil_status', 'living_with_partner',
             'number_of_children', 'currently_pregnant',
         ]
-
+        
+class PatientFormStep4(PatientInformationForm):
+    class Meta(PatientInformationForm.Meta):
+        fields = [
+            'highest_education_attainment', 'currently_in_school', 
+            'currently_working', 'current_occupation', 
+            'previous_occupation', 'worked_abroad_past_5_years',
+            'worked_overseas', 'year_return_from_abroad',
+            'work_abroad_location', 'work_type',
+            'last_country_worked', 'last_port_of_exit',
+        ]
 
 class PatientInformationWizard(SessionWizardView):
-    form_list = [PatientFormStep1, PatientFormStep2, PatientFormStep3]
+    form_list = [PatientFormStep1, PatientFormStep2, PatientFormStep3, PatientFormStep4]
     template_name = 'patient_info.html'
 
     def done(self, form_list, **kwargs):
-        # Combine all form data into one dictionary
+
+        # -----------------------------
+        # 1️⃣ Extract cleaned data
+        # -----------------------------
         data = {}
         for form in form_list:
             data.update(form.cleaned_data)
 
-        patient = PatientInformation(**data)      # 1️⃣ Prepare form data (like form.save(commit=False))
-        patient.user = self.request.user          # 2️⃣ Assign logged-in user
-        patient.save()                            # 3️⃣ Save to database
-        return redirect('home')   
+        # -----------------------------
+        # 2️⃣ Create USER account
+        # -----------------------------
+        username = data.pop('username')
+        email = data.pop('email')
+        password = data.pop('password')
+        data.pop('confirm_password')   # Remove confirm field
 
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password
+        )
+
+        # -----------------------------
+        # 3️⃣ Create PATIENT INFORMATION
+        # -----------------------------
+        patient = PatientInformation(**data)
+        patient.user = user
+        patient.save()
+
+        return redirect('login')
+ 
+class HivTestingFormStep1(HivTestingForm):
+    class Meta(HivTestingForm.Meta):
+        fields = [
+            'birth_mother_hiv', 'sex_partner_count_male', 'sex_partner_count_female', 'sexual_activity_male', 'sexual_activity_female',
+            'most_recent_anal_or_neovaginal_sex_male', 'most_recent_anal_or_neovaginal_sex_female', 'most_recent_condomless_sex_male', 'most_recent_condomless_sex_female',
+            'sex_with_male', 'sex_with_female',
+            'oral', 'anal_inserter', 'anal_receiver', 'vaginal_inserter', 'vaginal_receiver',
+            'condom_use',
+            'paid_for_sex', 'date_paid_for_sex',
+            'received_payment_for_sex', 'date_received_payment',
+            'sex_under_influence', 'date_sex_under_influence',
+            'shared_needles', 'date_shared_needles',
+            'received_transfusion', 'date_received_transfusion',
+            'occupational_exposure', 'date_occupational_exposure',
+        ]
+
+class HivTestingFormStep2(HivTestingForm):
+    class Meta(HivTestingForm.Meta):
+        fields = [
+            'possible_exposure', 'recommended_by_physician', 'referred_by_peer_educator',
+            'employment_overseas', 'employment_local', 'insurance_requirement',
+            'received_text_invite', 'other_reason',
+        ]
+
+class HivTestingFormStep3(HivTestingForm):
+    class Meta(HivTestingForm.Meta):
+        fields = [
+            'tested_before', 'date_of_last_test', 'test_facility',
+            'result', 'city_municipality',
+        ]
+
+class HivTestingWizard(SessionWizardView):
+    form_list = [HivTestingFormStep1, HivTestingFormStep2, HivTestingFormStep3]
+    template_name = 'hivtesting_form.html'
+
+    def done(self, form_list, **kwargs):
+        hiv_testing = form_list[0].save(commit=False)
+        hiv_testing.user = self.request.user
+        hiv_testing.save()
+        return redirect('home')
 
 class ContactWizard(SessionWizardView):
     form_list = [ContactForm1, ContactForm2]
@@ -66,16 +187,36 @@ class ContactWizard(SessionWizardView):
 # Register View
 def register(request):
     if request.method == 'POST':
-        form = RegistrationForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            user.set_password(form.cleaned_data['password'])
+        reg_form = RegistrationForm(request.POST)
+        patient_form = PatientInformationForm(request.POST)
+
+        if reg_form.is_valid() and patient_form.is_valid():
+
+            # ----- CREATE USER -----
+            user = reg_form.save(commit=False)
+            user.set_password(reg_form.cleaned_data['password'])
             user.save()
+
+            # ----- CREATE PATIENT INFORMATION -----
+            patient = patient_form.save(commit=False)
+            patient.user = user  
+            patient.save()
+
             messages.success(request, 'Account created successfully! You can now log in.')
             return redirect('login')
+
     else:
-        form = RegistrationForm()
-    return render(request, 'authentication/register.html', {'form': form})
+        reg_form = RegistrationForm()
+        patient_form = PatientInformationForm()
+
+    return render(
+        request,
+        'authentication/register.html',
+        {
+            'form': reg_form,
+            'patient_form': patient_form,
+        }
+    )
 
 
 # Login View
@@ -104,7 +245,7 @@ def login_view(request):
     else:
         form = LoginForm()
 
-    return render(request, 'authentication/login.html', {'form': form})
+    return render(request, 'login.html', {'form': form})
 
 @login_required
 def home(request):
@@ -112,15 +253,14 @@ def home(request):
     task = Task.objects.filter(user=request.user)
 
     # Try to get the user's patient information (if it exists)
-    patient_info = None
-    try:
-        patient_info = PatientInformation.objects.get(user=request.user)
-    except PatientInformation.DoesNotExist:
-        patient_info = None
+    # Get user's patient info (if exists)
+    patient_info = PatientInformation.objects.filter(user=request.user).first()
+    hiv_testings = HivTesting.objects.filter(user=request.user).first()
 
     context = {
         'task': task,
         'patient_info': patient_info,
+        'hiv_testings': hiv_testings,
     }
 
     return render(request, 'home.html', context)
@@ -128,7 +268,7 @@ def home(request):
 
 # Logout View
 def logout_view(request):
-    if request.method == 'POST':
+    if request.method == 'GET':
         logout(request)
         return redirect('login')
     
@@ -147,15 +287,3 @@ def add_task(request):
         
         return render (request, "add_task.html", {'form':form})
 
-# @login_required
-# def add_personal_info(request):
-#     if request.method == 'POST':
-#         form = PersonalInformationForm(request.POST)
-#         if form.is_valid():
-#             info = form.save(commit=False)
-#             info.user = request.user
-#             info.save()
-#             return redirect('home')
-#     else:
-#         form = PersonalInformationForm()
-#     return render(request, 'add_personal_info.html', {'form': form})

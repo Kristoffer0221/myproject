@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import ContactWizard, PatientInformationWizard
+from .views import ContactWizard, HivTestingWizard, PatientInformationWizard
 from .forms import ContactForm1, ContactForm2
 urlpatterns = [
     path('', views.login_view, name='login'),
@@ -11,4 +11,8 @@ urlpatterns = [
     # path('personal-info/add/', views.add_personal_info, name='add_personal_info'),
     path('contact/', ContactWizard.as_view([ContactForm1, ContactForm2]), name='contact_wizard'),
     path('patient-info/', PatientInformationWizard.as_view(), name='patient_information_wizard'),
+    path('patient/pdf/<int:pk>/', views.download_patient_pdf, name='download_patient_pdf'),
+    path('hiv-testing/', HivTestingWizard.as_view(), name='hiv_testing_wizard'),
+    
+    path('dashboard/', views.dashboard, name='dashboard'),
 ]
