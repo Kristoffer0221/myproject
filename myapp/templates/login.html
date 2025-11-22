@@ -1,59 +1,55 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-
-    {% load static %}
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
+  <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6 text-center">Login</h2>
 
-    {% block content %}
-
-    <div class="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
-        
-        <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Login</h2>
-
-        {% if messages %}
-        <div class="mb-4">
-            {% for message in messages %}
-            <p class="text-sm text-red-600 bg-red-100 border border-red-300 p-2 rounded-md">
-                {{ message }}
-            </p>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <form action="{% url 'login' %}" method="POST" class="space-y-4">
-            {% csrf_token %}
-
-            <!-- Styling Django form fields -->
-            <div class="space-y-2">
-                {{ form.as_p }}
-            </div>
-
-            <button type="submit"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition duration-200">
-                Login
-            </button>
-        </form>
-
-        <div class="text-center mt-5">
-            <p class="text-sm text-gray-600">
-                Don’t have an account?
-                <a href="{% url 'register' %}" class="text-blue-600 font-semibold hover:underline">
-                    Register
-                </a>
-            </p>
-        </div>
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for message in messages %}
+      <div class="text-sm text-red-600 bg-red-100 rounded p-2">{{ message }}</div>
+      {% endfor %}
     </div>
+    {% endif %}
 
-    {% endblock %}
+    <form action="{% url 'login' %}" method="POST" class="space-y-6">
+      {% csrf_token %}
+      {% load widget_tweaks %}
 
+      {% for field in form %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+        {{ field|add_class:"w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" }}
+        {% if field.help_text %}
+        <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
+        {% endif %}
+        {% for error in field.errors %}
+        <p class="text-sm text-red-600 mt-1">{{ error }}</p>
+        {% endfor %}
+      </div>
+      {% endfor %}
+
+      <button type="submit"
+        class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition">
+        Login
+      </button>
+    </form>
+
+    <div class="mt-6 text-center text-gray-600 text-sm">
+      Don’t have an account? <a href="{% url 'register' %}" class="text-blue-600 hover:underline">Register</a>
+    </div>
+  </div>
+
+  
 </body>
 
 </html>
